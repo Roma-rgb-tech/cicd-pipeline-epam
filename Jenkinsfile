@@ -73,7 +73,7 @@ pipeline {
                 sh """
                     docker run -d \
                         --name ${CONTAINER_NAME} \
-                        -p ${APP_PORT}:3000 \
+                        -p ${APP_PORT}:3005 \
                         --restart unless-stopped \
                         ${IMAGE_NAME}:${IMAGE_TAG}
                 """
