@@ -15,7 +15,7 @@ pipeline {
     }
 
     environment {
-        APP_PORT       = "${params.DEPLOY_BRANCH == 'main' ? '3000' : '3001'}"
+        APP_PORT       = "${params.DEPLOY_BRANCH == 'main' ? '3005' : '3001'}"
         IMAGE_NAME     = "${params.DEPLOY_BRANCH == 'main' ? 'nodemain' : 'nodedev'}"
         CONTAINER_NAME = "${params.DEPLOY_BRANCH == 'main' ? 'app-main' : 'app-dev'}"
     }
@@ -73,7 +73,7 @@ pipeline {
                 sh """
                     docker run -d \
                         --name ${CONTAINER_NAME} \
-                        -p ${APP_PORT}:3000 \
+                        -p ${APP_PORT}:3005 \
                         --restart unless-stopped \
                         ${IMAGE_NAME}:${params.IMAGE_TAG}
                 """
