@@ -70,14 +70,7 @@ pipeline {
                 """
 
                 // Run new container for this env
-                sh """
-    docker run -d \
-        --name ${CONTAINER_NAME} \
-        -p ${APP_PORT}:${APP_PORT} \
-        -e PORT=${APP_PORT} \
-        --restart unless-stopped \
-        ${IMAGE_NAME}:${params.IMAGE_TAG}
-"""
+               docker run -d --name ${CONTAINER_NAME} -p ${APP_PORT}:3000 ${IMAGE_NAME}:${IMAGE_TAG}
 
                 echo "✅ Application deployed!"
                 echo "🌐 Access at: http://localhost:${APP_PORT}"
