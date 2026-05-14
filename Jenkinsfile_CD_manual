@@ -1,0 +1,117 @@
+pipeline {
+    agent any
+
+    parameters {
+        choice(
+            name: 'DEPLOY_BRANCH',
+            choices: ['main', 'dev'],
+            description: 'Select the branch/environment to deploy'
+        )
+        string(
+            name: 'IMAGE_TAG',
+            defaultValue: 'v1.0',
+            description: 'Docker image tag to deploy'
+        )
+    }
+
+    environment {
+        APP_PORT       = "${params.DEPLOY_BRANCH == 'main' ? '3000' : '3001'}"
+        IMAGE_NAME     = "${params.DEPLOY_BRANCH == 'main' ? 'nodemain' : 'nodedev'}"
+        CONTAINER_NAME = "${params.DEPLOY_BRANCH == 'main' ? 'app-main' : 'app-dev'}"
+    }
+
+    stages {
+
+        stage('Validate Parameters') {
+            steps {
+                echo "========================================="
+                echo "  CD Manual Deploy Pipeline"
+                echo "========================================="
+                echo "Branch/Env : ${params.DEPLOY_BRANCH}"
+                echo "Image      : ${IMAGE_NAME}:${params.IMAGE_TAG}"
+                echo "Port       : ${APP_PORT}"
+                echo "Container  : ${CONTAINER_NAME}"
+                echo "========================================="
+            }
+        }
+
+        stage('Check Docker Image') {
+            steps {
+                script {
+                    def imageExists = sh(
+                        script: "docker image inspect ${IMAGE_NAME}:${params.IMAGE_TAG} > /dev/null 2>&1 && echo 'yes' || echo 'no'",
+                        returnStdout: true
+                    ).trim()
+
+                    if (imageExists == 'no') {
+                        error("❌ Docker image '${IMAGE_NAME}:${params.IMAGE_TAG}' not found locally! Run the CICD pipeline first.")
+                    } else {
+                        echo "✅ Docker image '${IMAGE_NAME}:${params.IMAGE_TAG}' found."
+                    }
+                }
+            }
+        }
+
+        stage('Stop Existing Container') {
+            steps {
+                echo "Stopping container for env: ${params.DEPLOY_BRANCH}"
+                sh """
+                    if [ \$(docker ps -aq -f name=^${CONTAINER_NAME}\$) ]; then
+                        docker stop ${CONTAINER_NAME} || true
+                        docker rm   ${CONTAINER_NAME} || true
+                        echo "✅ Removed: ${CONTAINER_NAME}"
+                    else
+                        echo "ℹ️  No existing container: ${CONTAINER_NAME}"
+                    fi
+                """
+            }
+        }
+
+        stage('Deploy') {
+            steps {
+                echo "Deploying ${IMAGE_NAME}:${params.IMAGE_TAG} on port ${APP_PORT}..."
+                sh """
+                    docker run -d \
+                        --name ${CONTAINER_NAME} \
+                        -p ${APP_PORT}:3000 \
+                        --restart unless-stopped \
+                        ${IMAGE_NAME}:${params.IMAGE_TAG}
+                """
+                echo "✅ Deployment complete!"
+                echo "🌐 http://localhost:${APP_PORT}"
+            }
+        }
+
+        stage('Health Check') {
+            steps {
+                echo "Waiting for application to start..."
+                sh 'sleep 5'
+                sh """
+                    if docker ps --filter "name=${CONTAINER_NAME}" --filter "status=running" | grep -q ${CONTAINER_NAME}; then
+                        echo "✅ Container '${CONTAINER_NAME}' is running!"
+                        docker ps --filter "name=${CONTAINER_NAME}"
+                    else
+                        echo "❌ Container '${CONTAINER_NAME}' is NOT running!"
+                        docker logs ${CONTAINER_NAME} || true
+                        exit 1
+                    fi
+                """
+            }
+        }
+    }
+
+    post {
+        success {
+            echo "========================================="
+            echo "  ✅ DEPLOYMENT SUCCESSFUL"
+            echo "  Env  : ${params.DEPLOY_BRANCH}"
+            echo "  URL  : http://localhost:${APP_PORT}"
+            echo "  Image: ${IMAGE_NAME}:${params.IMAGE_TAG}"
+            echo "========================================="
+        }
+        failure {
+            echo "❌ Deployment FAILED for env: ${params.DEPLOY_BRANCH}"
+        }
+    }
+}
+
