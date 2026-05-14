@@ -53,29 +53,20 @@ pipeline {
                 """
             }
         }
-
         stage('Deploy') {
             steps {
                 echo "Deploying to port ${APP_PORT} for branch: ${env.BRANCH_NAME}"
-
-                // Stop and remove only the container for THIS env (branch)
                 sh """
                     if [ \$(docker ps -aq -f name=${CONTAINER_NAME}) ]; then
                         docker stop ${CONTAINER_NAME} || true
                         docker rm ${CONTAINER_NAME} || true
-                        echo "Removed existing container: ${CONTAINER_NAME}"
-                    else
-                        echo "No existing container to remove: ${CONTAINER_NAME}"
                     fi
                 """
 
-                // Run new container for this env
-               docker run -d --name ${CONTAINER_NAME} -p ${APP_PORT}:3000 ${IMAGE_NAME}:${IMAGE_TAG}
+                sh "docker run -d --name ${CONTAINER_NAME} -p ${APP_PORT}:3000 ${IMAGE_NAME}:${IMAGE_TAG}"
 
                 echo "✅ Application deployed!"
                 echo "🌐 Access at: http://localhost:${APP_PORT}"
-                echo "🐳 Container: ${CONTAINER_NAME}"
-                echo "📦 Image: ${IMAGE_NAME}:${IMAGE_TAG}"
             }
         }
     }
