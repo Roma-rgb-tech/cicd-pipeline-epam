@@ -1,10 +1,9 @@
 FROM node:7.8.0
 WORKDIR /opt
 ADD . /opt
-ENV REACT_APP_BRANCH=$BRANCH_NAME
-
+RUN npm install
 RUN npm run build
 ARG BRANCH_NAME
-
-RUN npm install
+ENV REACT_APP_BRANCH=$BRANCH_NAME
+EXPOSE 3000
 ENTRYPOINT npm run start
