@@ -5,4 +5,5 @@ RUN npm install
 RUN npm run build
 ARG BRANCH_NAME
 ENV REACT_APP_BRANCH=$BRANCH_NAME
+EXPOSE 3000
 ENTRYPOINT npm run start
