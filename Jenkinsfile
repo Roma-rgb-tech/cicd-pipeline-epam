@@ -7,7 +7,7 @@ pipeline {
 
     environment {
         // Set port based on branch name
-        APP_PORT = "${env.BRANCH_NAME == 'main' ? '3000' : '3001'}"
+        APP_PORT = "${env.BRANCH_NAME == 'main' ? '3005' : '3001'}"
         IMAGE_NAME = "${env.BRANCH_NAME == 'main' ? 'nodemain' : 'nodedev'}"
         IMAGE_TAG = 'v1.0'
         CONTAINER_NAME = "${env.BRANCH_NAME == 'main' ? 'app-main' : 'app-dev'}"
@@ -73,7 +73,7 @@ pipeline {
                 sh """
                     docker run -d \
                         --name ${CONTAINER_NAME} \
-                        -p ${APP_PORT}:3000 \
+                        -p ${APP_PORT}:3005 \
                         --restart unless-stopped \
                         ${IMAGE_NAME}:${IMAGE_TAG}
                 """
